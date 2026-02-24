@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treinamento de Leiturista</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--panel:#16191f;--border:#2d3748;
+  --accent:#f0b429;--red:#e53e3e;--green:#38a169;--muted:#4a5568;--text:#e2e8f0;
+}
+body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;font-family:'IBM Plex Mono',monospace;color:var(--text);padding:24px 16px 60px}
+header{text-align:center;margin-bottom:26px}
+header h1{font-family:'Orbitron',monospace;font-size:1.2rem;letter-spacing:5px;
+  color:var(--accent);text-shadow:0 0 30px rgba(240,180,41,.35);margin-bottom:6px}
+header p{font-size:.65rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+
+.score-bar{display:flex;gap:24px;margin-bottom:26px;background:var(--panel);
+  border:1px solid var(--border);border-radius:12px;padding:12px 28px}
+.score-item{text-align:center}
+.score-item .val{font-family:'Orbitron',monospace;font-size:1.6rem;line-height:1}
+.score-item .lbl{font-size:.55rem;letter-spacing:2px;color:var(--muted);margin-top:4px}
+.score-item.c .val{color:var(--green)}.score-item.w .val{color:var(--red)}.score-item.t .val{color:var(--accent)}
+
+.main{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center;
+  width:100%;max-width:920px}
+
+/* METER */
+.meter-body{background:#cdc9bb;border-radius:50%;width:320px;height:320px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:26px 18px 18px;
+  box-shadow:0 0 0 7px #b0ab9e,0 0 0 11px #8a877e,0 10px 50px rgba(0,0,0,.8),
+    inset 0 2px 6px rgba(255,255,255,.35);
+  position:relative;gap:8px}
+.screw{position:absolute;width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ddd,#888);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.screw::after{content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) rotate(45deg);width:6px;height:1px;background:#555}
+.screw.tl{top:18px;left:18px}.screw.tr{top:18px;right:18px}
+.screw.bl{bottom:18px;left:18px}.screw.br{bottom:18px;right:18px}
+.meter-brand{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:#333;
+  text-align:center;line-height:1.4;letter-spacing:1px}
+.meter-brand strong{font-size:.9rem;letter-spacing:2px}
+.dials-row{display:flex;gap:3px;background:#ccc8bb;padding:7px 9px;border-radius:8px;
+  border:1px solid #999;box-shadow:inset 0 2px 4px rgba(0,0,0,.2)}
+canvas.dial{display:block}
+.kwh-label{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:#333;letter-spacing:3px}
+.disk-wrap{width:90px;height:20px;overflow:hidden;border-radius:4px;border:1px solid #888;
+  background:#111;position:relative;display:flex;align-items:center;justify-content:center}
+.disk{width:84px;height:12px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,#222 0,#222 6px,#f0b429 6px,#f0b429 8px);
+  animation:sdisk 1.2s linear infinite}
+@keyframes sdisk{to{background-position:80px 0}}
+.disk-arrow{position:absolute;right:5px;color:#f0b429;font-size:9px}
+.meter-info{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#333;
+  text-align:center;line-height:1.6}
+.meter-serial{display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace;
+  font-size:.7rem;color:#222;background:#cec9bb;padding:2px 8px;border-radius:4px;border:1px solid #999}
+.serial-box{background:#333;color:#e8e4d8;padding:1px 5px;border-radius:3px;font-size:.6rem}
+
+/* PANEL */
+.right-panel{flex:1;min-width:280px;max-width:420px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.card-title{font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px}
+
+/* INPUTS */
+.input-row{display:flex;gap:6px;align-items:flex-end;justify-content:center;margin-bottom:16px}
+.digit-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.digit-lbl{font-size:.5rem;color:var(--muted);letter-spacing:1px}
+.digit-input{width:56px;height:68px;background:#0d1117;border:2px solid var(--border);
+  border-radius:8px;color:var(--accent);font-family:'Orbitron',monospace;font-size:2rem;
+  text-align:center;outline:none;transition:border-color .2s,box-shadow .2s;
+  -moz-appearance:textfield}
+.digit-input::-webkit-outer-spin-button,.digit-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.digit-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,180,41,.15)}
+.digit-input.ok{border-color:var(--green);box-shadow:0 0 0 3px rgba(56,161,105,.2);color:var(--green)}
+.digit-input.fail{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,62,62,.2);color:var(--red);animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.sep{font-family:'Orbitron',monospace;font-size:1.4rem;color:var(--border);padding-bottom:14px}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border:none;border-radius:10px;
+  font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:2px;
+  cursor:pointer;text-transform:uppercase;transition:all .15s}
+.btn-check{background:var(--accent);color:#111;font-weight:700;box-shadow:0 0 20px rgba(240,180,41,.2)}
+.btn-check:hover{background:#f6c94a;box-shadow:0 0 30px rgba(240,180,41,.4)}
+.btn-check:disabled{background:#2d3748;color:var(--muted);cursor:not-allowed;box-shadow:none}
+.btn-next{background:#0d1f14;color:var(--green);border:1px solid var(--green);display:none}
+.btn-next:hover{background:#1a3a26;box-shadow:0 0 20px rgba(56,161,105,.3)}
+.btn-next.show{display:block}
+
+/* FEEDBACK */
+.feedback{border-radius:12px;padding:18px;display:none;flex-direction:column;
+  align-items:center;gap:8px;text-align:center}
+.feedback.show{display:flex;animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.feedback.success{background:#0d1f14;border:1px solid var(--green)}
+.feedback.error{background:#1f0d0d;border:1px solid var(--red)}
+.fb-icon{font-size:2.8rem;line-height:1}
+.fb-title{font-family:'Orbitron',monospace;font-size:.9rem;letter-spacing:2px}
+.feedback.success .fb-title{color:var(--green)}
+.feedback.error   .fb-title{color:var(--red)}
+.fb-msg{font-size:.67rem;color:#a0aec0;line-height:1.7;max-width:320px}
+
+/* GABARITO */
+.gabarito{background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:16px 20px;display:none}
+.gabarito.show{display:block;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+.gab-title{font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:12px}
+.gab-row{display:flex;gap:8px;justify-content:center}
+.gab-cell{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:#0d1117;border-radius:8px;padding:10px 6px 8px;border:1px solid var(--border)}
+.gab-cell.ok{border-color:var(--green);background:#0d1f14}
+.gab-cell.fail{border-color:var(--red);background:#1f0d0d}
+.gab-lbl{font-size:.48rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.gab-correct{font-family:'Orbitron',monospace;font-size:1.6rem;line-height:1}
+.gab-cell.ok   .gab-correct{color:var(--green)}
+.gab-cell.fail .gab-correct{color:var(--red)}
+.gab-user{font-size:.58rem;color:var(--muted)}
+.gab-cell.fail .gab-user{color:#fc8181}
+.gab-icon{font-size:.9rem}
+.gab-total{display:flex;justify-content:space-between;align-items:center;
+  margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
+  font-size:.62rem;color:var(--muted)}
+.gab-kwh{font-family:'Orbitron',monospace;font-size:1rem;letter-spacing:3px;color:var(--green)}
+
+/* HINT */
+.hint-btn{background:none;border:1px dashed var(--border);color:var(--muted);
+  font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:1px;
+  border-radius:6px;padding:7px 14px;cursor:pointer;transition:all .15s}
+.hint-btn:hover{border-color:var(--accent);color:var(--accent)}
+.hint-box{display:none;background:#14110a;border:1px solid #3a2e00;border-radius:8px;
+  padding:12px 14px;font-size:.62rem;color:#a08040;line-height:1.8}
+.hint-box.show{display:block}
+.hint-box strong{color:var(--accent)}
+
+/* PROGRESS */
+.prog-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.prog-dot{width:10px;height:10px;border-radius:50%;background:var(--border)}
+.prog-dot.ok{background:var(--green)}.prog-dot.fail{background:var(--red)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Treinamento de Leiturista</h1>
+  <p>Medidor Schlumberger FX 221 · Simulador Didático</p>
+</header>
+
+<div class="score-bar">
+  <div class="score-item c"><div class="val" id="sC">0</div><div class="lbl">Corretas</div></div>
+  <div class="score-item w"><div class="val" id="sW">0</div><div class="lbl">Erradas</div></div>
+  <div class="score-item t"><div class="val" id="sT">0</div><div class="lbl">Total</div></div>
+</div>
+
+<div class="main">
+
+  <div class="meter-body" id="meterBody">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="meter-brand"><strong>Schlumberger</strong><br>Indústria Brasileira</div>
+    <div class="dials-row" id="dialsRow"></div>
+    <div class="kwh-label">kWh</div>
+    <div class="disk-wrap"><div class="disk"></div><span class="disk-arrow">▶</span></div>
+    <div class="meter-info">Modelo FX 221 · 1 Fase 2 Fios<br>60 Hz · 120 V · 15 A · Imax 100 A · Kd 1,8 Wh/r</div>
+    <div class="meter-serial">
+      <span class="serial-box">EM-3</span>
+      <span class="serial-box">044</span>
+      <span>3143247</span>
+    </div>
+  </div>
+
+  <div class="right-panel">
+
+    <div class="card">
+      <div class="card-title">Digite a Leitura do Relógio</div>
+      <div class="input-row" id="inputRow"></div>
+      <button class="btn btn-check" id="btnCheck" onclick="verificar()">Verificar Leitura</button>
+    </div>
+
+    <div class="feedback" id="feedback">
+      <div class="fb-icon"  id="fbIcon"></div>
+      <div class="fb-title" id="fbTitle"></div>
+      <div class="fb-msg"   id="fbMsg"></div>
+    </div>
+
+    <div class="gabarito" id="gabarito">
+      <div class="gab-title">Gabarito · Disco por Disco</div>
+      <div class="gab-row" id="gabRow"></div>
+      <div class="gab-total">
+        <span>Leitura correta:</span>
+        <span class="gab-kwh" id="gabTotal">—</span>
+      </div>
+    </div>
+
+    <button class="btn btn-next" id="btnNext" onclick="novaLeitura()">▶ Nova Leitura</button>
+
+    <button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Dica de leitura</button>
+    <div class="hint-box" id="hintBox">
+      <strong>Como ler o relógio de ponteiros:</strong><br>
+      1. Leia os discos da <strong>esquerda → direita</strong>.<br>
+      2. Anote o número que o ponteiro <strong>acabou de passar</strong> (o menor).<br>
+      3. Se o ponteiro estiver <strong>exatamente no número</strong>, verifique o disco à direita: se ainda não passou o zero, use o número anterior.<br>
+      4. Os discos alternam sentido: ↻ ↺ ↻ ↺
+    </div>
+
+    <div class="card" style="padding:14px 20px">
+      <div class="card-title" style="margin-bottom:8px">Histórico da Sessão</div>
+      <div class="prog-row" id="progRow"></div>
+      <div style="font-size:.55rem;color:var(--muted);margin-top:8px">🟢 Correta &nbsp; 🔴 Errada</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const N   = 4;
+const SZ  = 60;
+const DIR = [-1, 1, -1, 1]; // índice 0=esquerda ... 3=direita
+
+let angles  = [0,0,0,0];
+let gabarito = '';
+let respondeu = false;
+let nC=0, nW=0, hist=[];
+
+// ─── BUILD CANVASES ───────────────────────────────────────────
+function buildDials() {
+  const row = document.getElementById('dialsRow');
+  row.innerHTML = '';
+  for (let i=0;i<N;i++) {
+    const c = document.createElement('canvas');
+    c.id = 'dial'+i; c.width=SZ; c.height=SZ;
+    c.className = 'dial';
+    row.appendChild(c);
+  }
+}
+
+// ─── BUILD INPUT FIELDS ───────────────────────────────────────
+function buildInputs() {
+  const row = document.getElementById('inputRow');
+  row.innerHTML = '';
+  for (let i=0;i<N;i++) {
+    // separator before each dial except first
+    if (i>0) {
+      const sep = document.createElement('div');
+      sep.className='sep'; sep.textContent='·';
+      row.appendChild(sep);
+    }
+    const wrap = document.createElement('div');
+    wrap.className='digit-wrap';
+
+    const lbl = document.createElement('div');
+    lbl.className='digit-lbl'; lbl.textContent='Disco '+(i+1);
+
+    const inp = document.createElement('input');
+    inp.type='number'; inp.min=0; inp.max=9;
+    inp.className='digit-input'; inp.id='inp'+i; inp.placeholder='?';
+
+    inp.addEventListener('keydown', (function(idx){
+      return function(e) {
+        if (e.key==='Backspace' && this.value==='' && idx>0)
+          document.getElementById('inp'+(idx-1)).focus();
+        if (e.key==='Enter') verificar();
+      };
+    })(i));
+
+    inp.addEventListener('input', (function(idx){
+      return function() {
+        // strip to single digit
+        let v = this.value.replace(/[^0-9]/g,'');
+        if (v.length>1) v = v[v.length-1];
+        this.value = v;
+        if (v!=='' && idx<N-1)
+          document.getElementById('inp'+(idx+1)).focus();
+      };
+    })(i));
+
+    wrap.appendChild(lbl);
+    wrap.appendChild(inp);
+    row.appendChild(wrap);
+  }
+}
+
+// ─── DRAW ONE DIAL ────────────────────────────────────────────
+function drawDial(idx) {
+  const canvas = document.getElementById('dial'+idx);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dir = DIR[idx];
+  const angle = angles[idx];
+  const s=SZ, cx=s/2, cy=s/2, r=s/2-2;
+
+  ctx.clearRect(0,0,s,s);
+
+  // background gradient
+  const g = ctx.createRadialGradient(cx-3,cy-3,2,cx,cy,r);
+  g.addColorStop(0,'#f5f1e5'); g.addColorStop(1,'#ddd9ce');
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // tick marks
+  for (let i=0;i<20;i++) {
+    const theta = dir*(i/20)*Math.PI*2 - Math.PI/2;
+    const isMain = i%2===0;
+    const r1 = isMain ? r*.87 : r*.92;
+    ctx.beginPath();
+    ctx.moveTo(cx+r1*Math.cos(theta), cy+r1*Math.sin(theta));
+    ctx.lineTo(cx+r *Math.cos(theta), cy+r *Math.sin(theta));
+    ctx.strokeStyle = isMain?'#555':'#aaa';
+    ctx.lineWidth   = isMain?1.2:.7;
+    ctx.stroke();
+  }
+
+  // digit labels
+  ctx.font=`bold ${s*.17}px 'IBM Plex Mono',monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for (let i=0;i<=9;i++) {
+    const theta = dir*(i/10)*Math.PI*2 - Math.PI/2;
+    ctx.fillStyle='#222';
+    ctx.fillText(String(i), cx+r*.66*Math.cos(theta), cy+r*.66*Math.sin(theta));
+  }
+
+  // rotation direction arc
+  const da=.28, arcR=r*.83;
+  ctx.beginPath();
+  if (dir===1)  ctx.arc(cx,cy,arcR,-Math.PI/2-da,-Math.PI/2+da);
+  else          ctx.arc(cx,cy,arcR,-Math.PI/2+da,-Math.PI/2-da,true);
+  ctx.strokeStyle='rgba(240,180,41,.8)'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // needle
+  const norm  = ((angle%360)+360)%360;
+  const na    = dir*(norm/360)*Math.PI*2 - Math.PI/2;
+  const nx=cx+r*.75*Math.cos(na), ny=cy+r*.75*Math.sin(na);
+  const tx=cx-r*.2 *Math.cos(na), ty=cy-r*.2 *Math.sin(na);
+
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=4;
+  ctx.shadowOffsetX=1; ctx.shadowOffsetY=2;
+  ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(nx,ny);
+  ctx.strokeStyle='#cc2222'; ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(tx,ty);
+  ctx.strokeStyle='#881111'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.stroke();
+
+  // center dot
+  ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2); ctx.fillStyle='#1a1a1a'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,1.5,0,Math.PI*2); ctx.fillStyle='#aaa'; ctx.fill();
+}
+
+function renderAll() { for (let i=0;i<N;i++) drawDial(i); }
+
+// ─── READING HELPERS ─────────────────────────────────────────
+function angleToDigit(a) {
+  return Math.floor((((a%360)+360)%360)/36)%10;
+}
+
+// ─── NEW RANDOM READING ──────────────────────────────────────
+function novaLeitura() {
+  respondeu = false;
+
+  // reset inputs
+  for (let i=0;i<N;i++) {
+    const el = document.getElementById('inp'+i);
+    if (!el) continue;
+    el.value=''; el.readOnly=false; el.className='digit-input';
+    el.style.borderColor='';
+  }
+
+  // hide dynamic sections
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('gabarito').className  = 'gabarito';
+  document.getElementById('btnNext').className   = 'btn btn-next';
+  document.getElementById('btnCheck').disabled   = false;
+
+  // generate angles: rightmost fully random, others follow mechanically + small fuzz
+  angles[N-1] = Math.random()*360;
+  for (let i=N-2;i>=0;i--) {
+    const base = (angles[i+1]/360)*36;
+    angles[i] = (base + Math.random()*24 - 12 + 3600) % 360;
+  }
+  // keep needle clearly inside a segment (not right on a number line)
+  for (let i=0;i<N;i++) {
+    const seg = Math.floor(angles[i]/36);
+    angles[i]  = seg*36 + 7 + Math.random()*22;
+  }
+
+  gabarito = '';
+  for (let i=0;i<N;i++) gabarito += angleToDigit(angles[i]);
+
+  renderAll();
+  document.getElementById('inp0').focus();
+}
+
+// ─── VERIFY ──────────────────────────────────────────────────
+function verificar() {
+  if (respondeu) return;
+
+  // read values
+  const digits = [];
+  for (let i=0;i<N;i++) {
+    digits.push(document.getElementById('inp'+i).value.trim());
+  }
+
+  // validate: all must be filled
+  let allFilled = true;
+  for (let i=0;i<N;i++) {
+    if (digits[i]==='') {
+      allFilled = false;
+      const el = document.getElementById('inp'+i);
+      el.style.borderColor='var(--red)';
+      setTimeout(()=>{ if(!respondeu) el.style.borderColor=''; },800);
+    }
+  }
+  if (!allFilled) return;
+
+  respondeu = true;
+  document.getElementById('btnCheck').disabled = true;
+
+  const userAnswer = digits.join('');
+  const isCorrect  = userAnswer === gabarito;
+
+  // colour inputs
+  for (let i=0;i<N;i++) {
+    const el = document.getElementById('inp'+i);
+    el.readOnly = true;
+    el.className = 'digit-input ' + (digits[i]===gabarito[i] ? 'ok' : 'fail');
+  }
+
+  // ── GABARITO ──
+  const gabRow = document.getElementById('gabRow');
+  gabRow.innerHTML = '';
+  for (let i=0;i<N;i++) {
+    const cellOk = digits[i]===gabarito[i];
+    const cell = document.createElement('div');
+    cell.className = 'gab-cell '+(cellOk?'ok':'fail');
+    cell.innerHTML =
+      `<span class="gab-lbl">Disco ${i+1}</span>`+
+      `<span class="gab-correct">${gabarito[i]}</span>`+
+      `<span class="gab-user">você: ${digits[i]}</span>`+
+      `<span class="gab-icon">${cellOk?'✔':'✘'}</span>`;
+    gabRow.appendChild(cell);
+  }
+  document.getElementById('gabTotal').textContent = gabarito+' kWh';
+  document.getElementById('gabarito').className = 'gabarito show';
+
+  // ── FEEDBACK ──
+  const fb = document.getElementById('feedback');
+  if (isCorrect) {
+    fb.className = 'feedback show success';
+    document.getElementById('fbIcon').textContent  = '✅';
+    document.getElementById('fbTitle').textContent = 'Leitura Correta!';
+    document.getElementById('fbMsg').textContent   =
+      'Parabéns! Você identificou corretamente a leitura do medidor.';
+    nC++; hist.push('ok');
+  } else {
+    fb.className = 'feedback show error';
+    document.getElementById('fbIcon').textContent  = '❌';
+    document.getElementById('fbTitle').textContent = 'Leitura Incorreta';
+    document.getElementById('fbMsg').textContent   =
+      `Sua leitura "${userAnswer}" não confere com o relógio. `+
+      `Observe o gabarito: cada disco mostra o valor correto. `+
+      `Lembre-se de anotar o número que o ponteiro acabou de passar.`;
+    nW++; hist.push('fail');
+  }
+
+  // always show next button
+  document.getElementById('btnNext').className = 'btn btn-next show';
+
+  // score
+  document.getElementById('sC').textContent = nC;
+  document.getElementById('sW').textContent = nW;
+  document.getElementById('sT').textContent = nC+nW;
+
+  // progress dots
+  const pr = document.getElementById('progRow');
+  pr.innerHTML='';
+  hist.forEach(h=>{ const d=document.createElement('div'); d.className='prog-dot '+h; pr.appendChild(d); });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+buildDials();
+buildInputs();
+novaLeitura();
+</script>
+</body>
+</html>
