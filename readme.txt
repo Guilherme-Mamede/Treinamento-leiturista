@@ -1,0 +1,68 @@
+# ⚡ Treinamento de Leiturista
+
+Simulador didático interativo para treinamento de leitura de medidores de energia elétrica analógicos (relógio de ponteiros).
+
+🔗 **Acesse o simulador:** https://treinamento-leiturista.vercel.app/ <a href="https://treinamento-leiturista.vercel.app/">Clique aqui</a>
+
+---
+
+## 📌 Sobre o Projeto
+
+Desenvolvido para auxiliar no treinamento de novos leituristas, o simulador reproduz fielmente o comportamento de um medidor **Schlumberger FX 221** (1 Fase, 2 Fios, 120V), com discos giratórios e ponteiros animados.
+
+A cada rodada, uma nova leitura aleatória é gerada e o treinando deve identificar corretamente os dígitos de cada disco — exatamente como faria em campo.
+
+---
+
+## 🎯 Funcionalidades
+
+- ⚙️ Simulação fiel dos 4 discos com ponteiros e sentidos de rotação alternados (↻ ↺ ↻ ↺)
+- 🎲 Geração aleatória de leituras realistas (ponteiro sempre entre dois números)
+- ✍️ Campo de digitação com avanço automático entre os dígitos
+- ✅ Verificação imediata com gabarito disco por disco
+- 💬 Feedback visual e textual (acerto ou erro)
+- 📊 Placar da sessão com histórico de acertos e erros
+- 💡 Dica de como realizar a leitura corretamente
+
+---
+
+## 🧠 Como Usar
+
+1. Observe os 4 discos do medidor
+2. Leia cada ponteiro da **esquerda para a direita**
+3. Digite o dígito de cada disco no campo correspondente
+4. Clique em **Verificar Leitura**
+5. Confira o gabarito e a mensagem de acerto ou erro
+6. Clique em **Nova Leitura** para praticar novamente
+
+---
+
+## 📖 Regra de Leitura
+
+> Anote sempre o número que o ponteiro **acabou de passar** (o menor).
+> Se o ponteiro estiver exatamente sobre um número, verifique o disco à direita —
+> se ele ainda não passou o zero, use o número anterior.
+
+---
+
+## 🛠️ Tecnologias
+
+- HTML5
+- CSS3
+- JavaScript (Canvas API)
+- Sem frameworks ou dependências externas
+
+---
+
+## 👨‍💻 Como Rodar Localmente
+```bash
+git clone https://github.com/guilherme-mamede/treinamento-leiturista.git
+cd treinamento-leiturista
+# Abra o arquivo index.html no navegador
+```
+
+---
+
+## 📄 Licença
+
+Este projeto é de uso livre para fins educacionais.
